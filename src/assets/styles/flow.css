@@ -1,0 +1,8 @@
+.react-flow__node {
+    background-color: rgb(88,101,242);
+    border: none;
+}
+
+.react-flow__panel {
+    display: none;
+}
