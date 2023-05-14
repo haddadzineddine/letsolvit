@@ -4,18 +4,20 @@ import { initialEdges } from "./utils/edges";
 import { SideBar } from "./components/SideBar";
 import { useDisclosure } from "@chakra-ui/react";
 import { initialNodes } from "./utils/nodes";
-import { Resource } from "./assets/types/Resource";
-import { getResouces, getTopicTitle } from "./utils/resources";
+import { TopicService } from "./services/topic.service.";
+import { ResourceContext } from "./context/resource.context";
 
 import "reactflow/dist/style.css";
+import { Resource } from "./types/Resource";
 
 function Flow() {
 
   const [nodes] = useState<Node[]>(initialNodes);
   const [edges] = useState<Edge[]>(initialEdges);
 
-  const [topicResources, settopicResources] = useState<Resource[]>([]);
-  const [topicName, setTopicName] = useState<string>('');
+
+  const [resources, setResources] = useState<Resource>(TopicService.getResources());
+  const [topicTitle, setTopicTitle] = useState<string>('');
 
 
   const { isOpen, onOpen, onClose } = useDisclosure();
@@ -28,12 +30,7 @@ function Flow() {
       const node = nodesArray[0];
 
       if (node.type === 'position') {
-        const topic = node.id;
-        const resources = getResouces(topic);
-        const topicTitle = getTopicTitle(topic);
-        settopicResources(resources);
-        setTopicName(topicTitle);
-
+        setTopicTitle(node.id);
         onOpen();
       }
     }
@@ -42,8 +39,10 @@ function Flow() {
 
   return (
     <div className="main">
-      <SideBar isOpen={isOpen} onClose={onClose} resources={{ topicResources, topicName }} />
-      <ReactFlow nodes={nodes} edges={edges} onNodesChange={onNodesChange} fitView />
+      <ResourceContext.Provider value={{ resources, setResources, topicTitle }}>
+        <SideBar isOpen={isOpen} onClose={onClose} />
+        <ReactFlow nodes={nodes} edges={edges} onNodesChange={onNodesChange} fitView />
+      </ResourceContext.Provider>
     </div>
   );
 }

@@ -14,41 +14,74 @@ import {
     TableContainer,
     Link,
     Badge,
-    Checkbox
+    Checkbox,
 } from '@chakra-ui/react'
 
-import { Resource } from '../assets/types/Resource';
-import { correspondingDifficultyColor, resourceHeaders } from '../utils/resources';
-import { ExternalLinkIcon, StarIcon, ViewIcon } from '@chakra-ui/icons';
+import { ResourceContextType, TopicResource } from '../types/Resource';
+import { correspondingDifficultyColor, numberOfCompleted } from '../utils/helpers';
+import { StarIcon, ViewIcon } from '@chakra-ui/icons';
+import { TopicService } from '../services/topic.service.';
+import { useContext, useEffect, useState } from 'react';
+import { ResourceContext } from '../context/resource.context';
 
 
 type SideBarProps = {
     isOpen: boolean;
-    resources: {
-        topicResources: Resource[];
-        topicName: string;
-    };
     onClose: () => void;
 }
 
 
-export const SideBar = ({ isOpen, onClose, resources }: SideBarProps) => {
+export const SideBar = ({ isOpen, onClose }: SideBarProps) => {
 
-    const tableHeaders: string[] = resourceHeaders;
-    const tableContent: Resource[] = resources.topicResources;
+    const { resources, setResources, topicTitle } = useContext(ResourceContext) as ResourceContextType;
+    const [topicResources, setTopicResources] = useState<TopicResource[]>([]);
+
+
+    const tableHeaders: string[] = TopicService.getHeaders();
+
+    const toggleComplete = (resourceId: string) => {
+        TopicService.toggleComplete(resourceId);
+
+        topicResources.forEach((resource) => {
+            if (resource.problem === resourceId) {
+                resource.isCompleted = !resource.isCompleted;
+            }
+        });
+
+        setTopicResources([...topicResources]);
+    };
+
+    const toggleFavorite = (resourceId: string) => {
+        TopicService.toggleFavorite(resourceId);
+
+        topicResources.forEach((resource) => {
+            if (resource.problem === resourceId) {
+                resource.start = !resource.start;
+            }
+        });
+
+        setTopicResources([...topicResources]);
+
+        setResources({ ...resources, [topicTitle]: topicResources });
+    };
+
+    useEffect(() => {
+        const TopicResources = TopicService.getResoucesOfTopic(topicTitle);
+        setTopicResources(TopicResources);
+    }, [topicTitle]);
 
     return (
         <Drawer
             isOpen={isOpen}
             placement='right'
             onClose={onClose}
-            size="xl"
+            size="full"
         >
             <DrawerOverlay />
             <DrawerContent>
-                <DrawerCloseButton />
-                <DrawerHeader borderBottomWidth='1px'>
-                    {resources?.topicName} (0/12)
+                <DrawerCloseButton mt={2} bg={'red.700'} color={'white'} _hover={{ bg: "red.800" }} />
+                <DrawerHeader fontSize={'2xl'}>
+                    {TopicService.getTitle(topicTitle) + ' ( ' + numberOfCompleted(topicResources) + '/' + topicResources.length + ' ) '}
                 </DrawerHeader>
 
                 <DrawerBody>
@@ -65,20 +98,18 @@ export const SideBar = ({ isOpen, onClose, resources }: SideBarProps) => {
                             </Thead>
                             <Tbody>
                                 {
-                                    tableContent?.map((resource, index) => (
+                                    topicResources?.map((resource, index) => (
                                         <Tr key={index}>
                                             <Td>
-                                                <Checkbox checked={resource.isCompleted}></Checkbox>
+                                                <Checkbox colorScheme='green' onChange={() => toggleComplete(resource.problem)} defaultChecked={resource.isCompleted}></Checkbox>
                                             </Td>
                                             <Td>
+                                                <StarIcon cursor="pointer" onClick={() => toggleFavorite(resource.problem)} w={4} h={4} color={resource.start ? 'yellow.400' : 'gray.400'} />
 
-                                                {
-                                                    resource.start ? <StarIcon w={4} h={4} color='yellow.400' /> : <StarIcon w={4} h={4} color='gray.400' />
-                                                }
                                             </Td>
                                             <Td>
-                                                <Link href={resource.problemLink} isExternal>
-                                                    {resource.problem} <ExternalLinkIcon mx='2px' />
+                                                <Link href={resource.problemLink} isExternal fontWeight={'bold'} color={'blue.700'}>
+                                                    {resource.problem}
                                                 </Link>
                                             </Td>
                                             <Td>

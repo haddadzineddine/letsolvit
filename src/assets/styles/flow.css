@@ -1,5 +1,6 @@
 .react-flow__node {
     background-color: rgb(88,101,242);
+    width: 200px;
     border: none;
 }
 
